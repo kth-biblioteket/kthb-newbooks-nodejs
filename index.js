@@ -24,7 +24,7 @@ app.use(cors({
 const appRoutes = express.Router();
 
 appRoutes.get("/",function(req, res) {
-    res.json("Welcome to KTHB newbooks api");
+    res.json({message: "Welcome to KTHB newbooks api"});
 });
 
 appRoutes.get("/books", eventController.readNewbooks)

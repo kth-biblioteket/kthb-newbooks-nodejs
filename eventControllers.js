@@ -50,13 +50,13 @@ async function readNewbooks(req, res, next) {
     if(req.query.activationdate) {
         try {
             result = await eventModel.readNewbooks(req.query.activationdate)
-            res.send(result);
+            res.json(result);
         } catch (err) {
             console.log(err.message)
             return "error: " + err.message
         }
     } else {
-        res.send({"error": "missing activationdate"});
+        res.json({message: "missing activationdate"});
     }
     
 }
