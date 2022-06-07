@@ -1,4 +1,4 @@
-CREATE USER 'newbooks'@'localhost' IDENTIFIED BY 'xxxxxxxxxxxxxxx'
+CREATE USER 'newbooks'@'localhost' IDENTIFIED BY 'xxxxxxxxxxxxxxx';
 
 --
 -- Databas: `newbooks`
@@ -7,7 +7,7 @@ CREATE DATABASE IF NOT EXISTS `newbooks` DEFAULT CHARACTER SET utf8mb4 COLLATE u
 
 USE `newbooks`;
 
-GRANT SELECT, UPDATE, INSERT, DELETE ON newbooks.* TO 'newbooks'@'localhost'
+GRANT SELECT, UPDATE, INSERT, DELETE ON newbooks.* TO 'newbooks'@'localhost';
 
 -- --------------------------------------------------------
 
@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS `books` (
   `dewey` varchar(100) NOT NULL,
   `subject` varchar(500) DEFAULT NULL,
   `category` varchar(500) DEFAULT NULL,
-  `subcategory` varchar(500) DEFAULT NULL
+  `subcategory` varchar(500) DEFAULT NULL,
+  `booktype` char(1) NOT NULL,
 ) ENGINE=InnoDB AUTO_INCREMENT=376424 DEFAULT CHARSET=utf8;
 
 

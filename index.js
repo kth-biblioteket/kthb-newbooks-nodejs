@@ -23,7 +23,7 @@ app.use(cors({
 
 const appRoutes = express.Router();
 
-appRoutes.get("/", eventController.readAllNewbooks)
+appRoutes.get("/", eventController.readNewbooks)
 
 appRoutes.get('/public/style.css', function(req, res) {
     res.sendFile(__dirname + "/public/css/" + "styles.css");

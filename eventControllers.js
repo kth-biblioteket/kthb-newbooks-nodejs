@@ -46,14 +46,19 @@ async function deleteNewbook(id) {
     }
 }
 
-async function readAllNewbooks(req, res, next) {
-    try {
-        result = await eventModel.readAllNewbooks()
-        res.send(result);
-    } catch (err) {
-        console.log(err.message)
-        return "error: " + err.message
+async function readNewbooks(req, res, next) {
+    if(req.query.activationdate) {
+        try {
+            result = await eventModel.readNewbooks(req.query.activationdate)
+            res.send(result);
+        } catch (err) {
+            console.log(err.message)
+            return "error: " + err.message
+        }
+    } else {
+        res.send({"error": "missing activationdate"});
     }
+    
 }
 
 module.exports = {
@@ -61,5 +66,5 @@ module.exports = {
     createNewbook,
     updateNewbook,
     deleteNewbook,
-    readAllNewbooks
+    readNewbooks
 }
