@@ -17,17 +17,24 @@ var mysql = require('mysql')
 
 require('dotenv').config();
 
-//Dagar tillbaks att hämta nya böcker
-var days = process.env.DAYS;
-
 var primoxserviceendpoint = process.env.PRIMO_XSERVICE_ENDPOINT;
 
-var almaapiendpoint_ebooks
-almaapiendpoint_ebooks = process.env.ALMA_ANALYTICS_API_ENDPOINT_EBOOKS + '&filter=<sawx:expr xsi:type="sawx:comparison" op="greaterOrEqual" xmlns:saw="com.siebel.analytics.web/report/v1.1" xmlns:sawx="com.siebel.analytics.web/expression/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><sawx:expr xsi:type="sawx:sqlExpression">"E-Inventory"."Portfolio Activation Date"."Portfolio Activation Date"</sawx:expr><sawx:expr xsi:type="sawx:sqlExpression">TIMESTAMPADD(SQL_TSI_DAY, -' + days + ', CURRENT_DATE)</sawx:expr></sawx:expr>&limit=25';
 
-var almaapiendpoint_pbooks
-almaapiendpoint_pbooks = process.env.ALMA_ANALYTICS_API_ENDPOINT_PBOOKS + '&filter=<sawx:expr xsi:type="sawx:comparison" op="greaterOrEqual" xmlns:saw="com.siebel.analytics.web/report/v1.1" xmlns:sawx="com.siebel.analytics.web/expression/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><sawx:expr xsi:type="sawx:sqlExpression">"Physical Item Details"."Receiving Date (Calendar)"</sawx:expr><sawx:expr xsi:type="sawx:sqlExpression">TIMESTAMPADD(SQL_TSI_DAY, -' + days + ', CURRENT_DATE)</sawx:expr></sawx:expr>&limit=25';
-
+//Hämta senaste aktiveringsdatum från tabellen books
+const getLatestActivationDate = (con) => {
+    return new Promise(function (resolve, reject) {
+        const sql = `SELECT DATE_FORMAT(max(activationdate), "%Y-%m-%d") as latestactivationdate 
+		FROM books 
+		LIMIT 1`;
+        con.query(sql,(err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err.message)
+            }
+            resolve(result[0].latestactivationdate);
+        });
+    })
+};
 
 function addZero(i) {
     if (i < 10) {
@@ -193,7 +200,7 @@ function callprimoxservice(records,index, booktype, con) {
 		});
 }
 
-function callalmaanalytics_E(endpoint, token, nrofprocessedrecords, con){
+function callalmaanalytics_E(endpoint, latestactivationdate, token, nrofprocessedrecords, con){
 	var IsFinished = 'false';
 	var booksarray = [];
 	var mmsid;
@@ -204,6 +211,10 @@ function callalmaanalytics_E(endpoint, token, nrofprocessedrecords, con){
 	var subject;
 	var category;
 	var subcategory;
+
+	var endpoint
+	endpoint = process.env.ALMA_ANALYTICS_API_ENDPOINT_EBOOKS + 
+	`&filter=<sawx:expr xsi:type="sawx:comparison" op="greaterOrEqual" xmlns:saw="com.siebel.analytics.web/report/v1.1" xmlns:sawx="com.siebel.analytics.web/expression/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><sawx:expr xsi:type="sawx:sqlExpression">"E-Inventory"."Portfolio Activation Date"."Portfolio Activation Date"</sawx:expr><sawx:expr xsi:type="sawx:sqlExpression">TIMESTAMPADD(SQL_TSI_DAY, +1, date '${latestactivationdate}')</sawx:expr></sawx:expr>&limit=25`;
 
 	if(token!= '') {
 		endpoint = endpoint + '&token=' + token;
@@ -280,9 +291,15 @@ function callalmaanalytics_E(endpoint, token, nrofprocessedrecords, con){
 						console.log("nrofprocessedrecords " + nrofprocessedrecords);
 						//max xxx titlar
 						if(IsFinished == 'false' && nrofprocessedrecords < 10000) {
-							callalmaanalytics_E(almaapiendpoint_ebooks, token,nrofprocessedrecords);
+							callalmaanalytics_E(endpoint, latestactivationdate, token,nrofprocessedrecords, con);
 						} else {
-							con.query("SELECT * FROM books WHERE booktype = 'E' ORDER BY activationdate DESC LIMIT 10000", function (error, result, fields) {
+							//Alla titlar hämtade och tillagda i tabellen books
+							sql = `SELECT * FROM books 
+									WHERE booktype = 'E'
+									AND activationdate > '${latestactivationdate}'
+									ORDER BY activationdate DESC 
+									LIMIT 500`
+							con.query(sql, function (error, result, fields) {
 								if (error) {
 									currentdate = new Date();
 									fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, Error selecting " + error + "\n", function (err) {
@@ -314,7 +331,7 @@ function callalmaanalytics_E(endpoint, token, nrofprocessedrecords, con){
 	});
 }
 
-function callalmaanalytics_P(endpoint, token, nrofprocessedrecords, con){
+function callalmaanalytics_P(endpoint, latestactivationdate, token, nrofprocessedrecords, con){
 	var IsFinished = 'false';
 	var booksarray = [];
 	var mmsid;
@@ -325,6 +342,10 @@ function callalmaanalytics_P(endpoint, token, nrofprocessedrecords, con){
 	var subject;
 	var category;
 	var subcategory;
+
+	var endpoint
+	endpoint = process.env.ALMA_ANALYTICS_API_ENDPOINT_PBOOKS + 
+	`&filter=<sawx:expr xsi:type="sawx:comparison" op="greaterOrEqual" xmlns:saw="com.siebel.analytics.web/report/v1.1" xmlns:sawx="com.siebel.analytics.web/expression/v1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><sawx:expr xsi:type="sawx:sqlExpression">"Physical Item Details"."Receiving Date (Calendar)"</sawx:expr><sawx:expr xsi:type="sawx:sqlExpression">TIMESTAMPADD(SQL_TSI_DAY, +1, date '${latestactivationdate}')</sawx:expr></sawx:expr>&limit=25`;
 
 	if(token!= '') {
 		endpoint = endpoint + '&token=' + token;
@@ -386,9 +407,15 @@ function callalmaanalytics_P(endpoint, token, nrofprocessedrecords, con){
 						console.log("nrofprocessedrecords " +nrofprocessedrecords);
 						//max xxx titlar
 						if(IsFinished == 'false' && nrofprocessedrecords < 500) {
-							callalmaanalytics_P(almaapiendpoint_pbooks, token,nrofprocessedrecords);
+							callalmaanalytics_P(endpoint, latestactivationdate, token, nrofprocessedrecords, con);
 						} else {
-							con.query("SELECT * FROM books WHERE booktype = 'P' ORDER BY activationdate DESC LIMIT 500", function (error, result, fields) {
+							//Alla titlar hämtade och tillagda i tabellen books
+							sql = `SELECT * FROM books 
+									WHERE booktype = 'P'
+									AND activationdate > '${latestactivationdate}'
+									ORDER BY activationdate DESC 
+									LIMIT 500`
+							con.query(sql, function (error, result, fields) {
 								if (error) {
 									currentdate = new Date();
 									fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, Error selecting " + error + "\n", function (err) {
@@ -420,7 +447,8 @@ function callalmaanalytics_P(endpoint, token, nrofprocessedrecords, con){
 	});
 }
 
-function createnewbooksrecords(booktype) {
+async function createnewbooksrecords(booktype) {
+	var latestactivationdate
 	//DB Connect
 	var con = mysql.createConnection({
 		host: process.env.DATABASE_SERVER,
@@ -430,7 +458,7 @@ function createnewbooksrecords(booktype) {
 		database: process.env.DATABASE_NAME
 	});
 
-	con.connect(function(error) {
+	con.connect(async function(error) {
 		if (error) {
 			currentdate = new Date();
 			fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, Connection error: \n" + error, function (err) {
@@ -439,36 +467,51 @@ function createnewbooksrecords(booktype) {
 			console.log("Error: " + error + " job terminated")
 			//throw error;
 		} else {
-			
+			if (process.env.FORCEACTIVATIONDATE) {
+				latestactivationdate = process.env.FORCEACTIVATIONDATE
+			} else {
+				latestactivationdate = await getLatestActivationDate(con)
+			}
+			if (latestactivationdate === null) {
+				var today = new Date();
+				var dd = addZero(today.getDate());
+
+				var mm = addZero(today.getMonth()+1); 
+				var yyyy = today.getFullYear();
+				latestactivationdate = yyyy + '-' + mm + '-' + dd;
+			}
 			//Start transaction!
 			con.beginTransaction();
-			sql = "DELETE FROM books WHERE booktype = '" + booktype + "'" ;
 
-			con.query(sql, function (err, result) {
-				if (err) { 
-					con.rollback(function() {
-						currentdate = new Date();
-						fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, error deleting \n", function (err) {
-							if (err) throw err;
+			if (process.env.DELETEBOOKS === 'TRUE') {
+				sql = "DELETE FROM books WHERE booktype = '" + booktype + "'" ;
+
+				con.query(sql, function (err, result) {
+					if (err) { 
+						con.rollback(function() {
+							currentdate = new Date();
+							fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, error deleting \n", function (err) {
+								if (err) throw err;
+							});
 						});
+					}
+					currentdate = new Date();
+					fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, Books deleted \n", function (err) {
+						if (err) throw err;
 					});
-				}
-				currentdate = new Date();
-				fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, Books deleted \n", function (err) {
-					if (err) throw err;
+					console.log("Books deleted");
 				});
-				console.log("Books deleted");
-			});
+			}
 
 			currentdate = new Date();
-			fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest started. Days: " + days + "\n", function (err) {
+			fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest started." + "\n", function (err) {
 				if (err) throw err;
 			});
 
 			if (booktype == 'E') {
-				callalmaanalytics_E(almaapiendpoint_ebooks, '', 0, con);
+				callalmaanalytics_E("", latestactivationdate, '', 0, con);
 			} else if (booktype == 'P') {
-				callalmaanalytics_P(almaapiendpoint_pbooks, '', 0, con);
+				callalmaanalytics_P("", latestactivationdate, '', 0, con);
 			} else {console.log("ange booktype!")}
 		}
 
