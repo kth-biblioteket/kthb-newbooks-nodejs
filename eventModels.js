@@ -75,7 +75,7 @@ const readNewbooks = (activationdate) => {
                     publicationdate, dewey, subject, category, subcategory, booktype 
                     FROM books
                     WHERE activationdate >= ?
-                    ORDER BY activationdate`;
+                    ORDER BY activationdate DESC`;
         database.db.query(database.mysql.format(sql,[activationdate]),(err, result) => {
             if(err) {
                 console.error(err);
