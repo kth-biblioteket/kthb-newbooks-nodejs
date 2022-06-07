@@ -29,7 +29,7 @@ appRoutes.get('/public/style.css', function(req, res) {
     res.sendFile(__dirname + "/public/css/" + "styles.css");
 });
 
-app.use('/newbooks', appRoutes);
+app.use('/newbooks/api/v1', appRoutes);
 
 const server = app.listen(process.env.PORT || 3002, function () {
     const port = server.address().port;
