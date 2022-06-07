@@ -36,6 +36,28 @@ const getLatestActivationDate = (con) => {
     })
 };
 
+const deleteBooks = (booktype, con) => {
+    return new Promise(function (resolve, reject) {
+		var currentdate = new Date();
+        const sql = `DELETE FROM books WHERE booktype = '${booktype}'`;
+        con.query(sql,(err, result) => {
+            if(err) {
+                con.rollback(function() {
+					fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, error deleting \n", function (err) {
+						if (err) throw err;
+					});
+				});
+                reject(err.message)
+            }
+			fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, Books deleted \n", function (err) {
+				if (err) throw err;
+			});
+			console.log("Books deleted");
+            resolve(result);
+        });
+    })
+};
+
 function addZero(i) {
     if (i < 10) {
         i = "0" + i;
@@ -61,12 +83,13 @@ function util(url) {
 	})
 }
 
-function addgooglecover(records,index, booktype, con) {
+function addgooglecover(records, index, booktype, con, google_tries) {
 	var thumbnail = "";
 	thumbnail =	records[index].thumbnail;
 	var coverURL = "";
 	axios.get(thumbnail)
 		.then(async googleres => {
+			google_tries = 0;
 			var googleresponse = googleres.data.replace("updateGBSCover(","");
 			googleresponse = googleresponse.replace(");","");
 			googleresponse = JSON.parse(googleresponse);
@@ -81,16 +104,12 @@ function addgooglecover(records,index, booktype, con) {
 			if(coverURL == "") {
 				//syndetics som backup om inte google har omslaget
 				coverURL = 'https://secure.syndetics.com/index.aspx?isbn=' + records[index].isbnprimo + '/lc.gif&client=primo&type=unbound&imagelinking=1';
-				//let img = await util(coverURL)
-				console.log("isbnprimo: " + records[index].isbnprimo)
 				const img = await axios.get(coverURL)
     			if(img.headers['content-length']=='6210') {
 					coverURL = process.env.DEFAULT_COVER_URL
-					console.log("content-length: 6210");
 				}
 				if( records[index].isbnprimo == '') {
 					coverURL = process.env.DEFAULT_COVER_URL
-					console.log("empty isbn");
 				}
 
 				sql = "UPDATE books SET coverurl = '" + coverURL + "'" + 
@@ -133,6 +152,13 @@ function addgooglecover(records,index, booktype, con) {
 		})
 		.catch(error => {
 			console.log("GoogleError: " + error);
+			if (google_tries < 5) {
+				google_tries++;
+				addgooglecover(records, index, booktype, con, google_tries);
+			} else {
+				index++;
+				addgooglecover(records, index, booktype, con, google_tries);
+			}
 		});
 }
 
@@ -190,7 +216,8 @@ function callprimoxservice(records,index, booktype, con) {
 							if (err) throw err;
 						});
 					} else {
-						addgooglecover(result,0,booktype, con);
+						console.log(result.length)
+						addgooglecover(result, 0, booktype, con);
 					}
 				});
 			}
@@ -480,27 +507,12 @@ async function createnewbooksrecords(booktype) {
 				var yyyy = today.getFullYear();
 				latestactivationdate = yyyy + '-' + mm + '-' + dd;
 			}
+
 			//Start transaction!
 			con.beginTransaction();
-
+			
 			if (process.env.DELETEBOOKS === 'TRUE') {
-				sql = "DELETE FROM books WHERE booktype = '" + booktype + "'" ;
-
-				con.query(sql, function (err, result) {
-					if (err) { 
-						con.rollback(function() {
-							currentdate = new Date();
-							fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, error deleting \n", function (err) {
-								if (err) throw err;
-							});
-						});
-					}
-					currentdate = new Date();
-					fs.appendFile(appath + 'harvest.log', addZero(currentdate.getHours()) + ":" + addZero(currentdate.getMinutes()) + ":" + addZero(currentdate.getSeconds()) + " Harvest, Books deleted \n", function (err) {
-						if (err) throw err;
-					});
-					console.log("Books deleted");
-				});
+				const deletebooks = await deleteBooks(booktype, con)
 			}
 
 			currentdate = new Date();
@@ -512,7 +524,9 @@ async function createnewbooksrecords(booktype) {
 				callalmaanalytics_E("", latestactivationdate, '', 0, con);
 			} else if (booktype == 'P') {
 				callalmaanalytics_P("", latestactivationdate, '', 0, con);
-			} else {console.log("ange booktype!")}
+			} else {
+				console.log("ange booktype!")
+			}
 		}
 
 	});
