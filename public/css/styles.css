@@ -1,0 +1,184 @@
+body {
+    margin: 0 auto;
+    font-family: "Open Sans", Arial, "Helvetica Neue", helvetica, sans-serif;
+    padding: 1em;
+}
+
+body #gradientBorder {
+    height: 6px;
+    background-image: linear-gradient(to left, #005ea4, #5c98c4);
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+hr.solid {
+    border-top: 3px solid #000;
+}
+
+a {
+    text-decoration: none;
+}
+
+main .navbar-expand-lg .navbar-nav .nav-link {
+    padding-right: 1rem;
+    padding-left: 0rem;
+}
+
+.nav-link {
+    font-size: 1.25rem;
+}
+
+.nav-link.active {
+    color: red;
+}
+
+.navbar {
+    display: block !important;
+}
+
+.navbar-nav {
+    flex: 1
+}
+
+.navbar-brand {
+    font-family: "Open Sans", Arial, "Helvetica Neue", helvetica, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #000;
+    line-height: 1.375;
+    margin-top: 0;
+    margin-bottom: 0;
+    height: auto;
+    max-width: calc(100% - 136px);
+    position: relative;
+    top: -5px;
+}
+
+.navbar-brand img {
+    margin: 0 30px 0 0;
+}
+
+.wrap {
+    width: 270px;
+    height: 475px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #888888;
+}
+
+.frame {
+    width: 1080px;
+    height: 1920px;
+    border: 0;
+    -ms-transform: scale(0.25);
+    -moz-transform: scale(0.25);
+    -o-transform: scale(0.25);
+    -webkit-transform: scale(0.25);
+    transform: scale(0.25);
+
+    -ms-transform-origin: 0 0;
+    -moz-transform-origin: 0 0;
+    -o-transform-origin: 0 0;
+    -webkit-transform-origin: 0 0;
+    transform-origin: 0 0;
+}
+
+.header {
+    z-index: 10;
+    display: flex;
+    flex-direction: row;
+    background-color: #ffffff;
+    padding: 10px;
+}
+
+#content {
+    z-index: 1;
+    padding: 10px;
+    display: flex;
+}
+
+h2 {
+    padding: 0;
+    margin: 0;
+}
+
+.paymentinfo {
+    display:flex;width:400px; padding-bottom: 10px
+}
+
+@media screen and (max-width: 400px) {
+    .navbar-brand {
+        font-size: 0.8rem;
+    }
+
+    .paymentinfo {
+        width:270px;
+    }
+
+}
+
+@media screen and (max-width: 1000px) {
+    .navcontainer {
+        display: flex;
+        flex-wrap: inherit;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+@media screen and (max-width: 600px) {
+    table {
+      border: 0;
+    }
+  
+    table caption {
+      font-size: 1.3em;
+    }
+    
+    table thead {
+      border: none;
+      clip: rect(0 0 0 0);
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      padding: 0;
+      position: absolute;
+      width: 1px;
+    }
+    
+    table tr {
+      border-bottom: 3px solid #ddd;
+      display: block;
+      margin-bottom: .625em;
+    }
+    
+    table td {
+      border-bottom: 1px solid #ddd;
+      display: block;
+      font-size: .8em;
+      text-align: right;
+    }
+    
+    table td::before {
+      /*
+      * aria-label has no advantage, it won't be read inside a table
+      content: attr(aria-label);
+      */
+      content: attr(data-label);
+      float: left;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    table td:last-child {
+      border-bottom: 0;
+    }
+  }

@@ -1,0 +1,65 @@
+require('dotenv').config()
+
+const eventModel = require('./eventModels');
+
+const axios = require('axios')
+const fs = require("fs");
+const path = require('path');
+
+async function readNewbook(payment_id) {
+    try {
+        result = await eventModel.readNewbook(payment_id)
+        return result;
+    } catch (err) {
+        console.log(err.message)
+        return "error: " + err.message
+    }
+}
+
+async function createNewbook(payment_id, primary_id, fee_id) {
+    try {
+        let result = await eventModel.createNewbook(payment_id, primary_id, fee_id)
+        return result
+    } catch (err) {
+        console.log(err.message)
+        return "error: " + err.message
+    }
+}
+
+async function updateNewbook(id, finished) {
+    try {
+        let result = await eventModel.updateNewbook(id, finished)
+        return result
+    } catch (err) {
+        console.log(err.message)
+        return "error: " + err.message
+    }
+}
+
+async function deleteNewbook(id) {
+    try {
+        let result = await eventModel.deleteNewbook(id)
+        return result
+    } catch (err) {
+        console.log(err.message)
+        return "error: " + err.message
+    }
+}
+
+async function readAllNewbooks(req, res, next) {
+    try {
+        result = await eventModel.readAllNewbooks()
+        res.send(result);
+    } catch (err) {
+        console.log(err.message)
+        return "error: " + err.message
+    }
+}
+
+module.exports = {
+    readNewbook,
+    createNewbook,
+    updateNewbook,
+    deleteNewbook,
+    readAllNewbooks
+}
