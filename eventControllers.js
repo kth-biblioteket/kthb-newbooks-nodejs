@@ -47,18 +47,13 @@ async function deleteNewbook(id) {
 }
 
 async function readNewbooks(req, res, next) {
-    if(req.query.activationdate) {
         try {
-            result = await eventModel.readNewbooks(req.query.activationdate)
+            result = await eventModel.readNewbooks(req)
             res.json(result);
         } catch (err) {
             console.log(err.message)
             return "error: " + err.message
         }
-    } else {
-        res.json({message: "missing activationdate"});
-    }
-    
 }
 
 module.exports = {
